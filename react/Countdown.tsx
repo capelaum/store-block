@@ -10,14 +10,6 @@ import productReleaseDate from './queries/productReleaseDate.graphql'
 const CSS_HANDLES = ["countdown"]
 const DEFAULT_TARGET_DATE = (new Date('2020-06-25')).toISOString()
 
-const { product: { linkText } } = useProduct()
-const { data, loading, error } = useQuery(productReleaseDate, {
-  variables: {
-    slug: linkText
-  },
-  ssr: false
-})
-
 interface CountdownProps { 
   targetDate: string
 }
@@ -30,31 +22,50 @@ const Countdown: StorefrontFunctionComponent<CountdownProps> = ({ targetDate = D
     seconds: '00'
   })
 
-  if (loading) {
-    return (
-      <div>
-        <span>Loading...</span>
-      </div>
-    )
-  }
-  if (error) {
-    return (
-      <div>
-        <span>Error!</span>
-      </div>
-    )
-  }
-
   const handles = useCssHandles(CSS_HANDLES)
+  const { product } = useProduct()
 
-  tick(data?.product?.releaseDate || DEFAULT_TARGET_DATE, setTime)
-
+  if (typeof product === "undefined") {
+    tick(targetDate, setTime)
+  } else {
+    const { product: { linkText } } = useProduct()
+    const { data, loading, error } = useQuery(productReleaseDate, {
+      variables: {
+        slug: linkText
+      },
+      ssr: false
+    })
+    if (loading) {
+      return (
+        <div>
+          <span>Loading...</span>
+        </div>
+      )
+    }
+    if (error) {
+      return (
+        <div>
+          <span>Erro!</span>
+        </div>
+      )
+    }
+    if (!product) {
+      return (
+        <div>
+          <span>Não há contexto de produto</span>
+        </div>
+      )
+    }
+    tick(data?.product?.releaseDate || DEFAULT_TARGET_DATE, setTime)
+  }
   return (
-    <div className={`${handles.countdown} db tc`}>
-      {`${timeRemaining.hours}:${timeRemaining.minutes}:${timeRemaining.seconds}`}
+    <div>
+      <div className={`${handles.countdown} t-heading-2 fw3 w-100 c-muted-1 db tc`}>
+        {`${timeRemaining.hours}:${timeRemaining.minutes}:${timeRemaining.seconds}`}
+      </div>
     </div>
   )
-}
+}  
 
 Countdown.schema = {
   title: 'editor.countdown.title',
